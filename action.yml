@@ -1,0 +1,155 @@
+name: 'Clazy action'
+description: 'GitHub Action for use clazy-standalone in Qt Projects'
+inputs:
+  version:
+    description: 'Clazy version'
+    required: true
+    default: '1.11'
+  extensions:
+      description: Extensions.
+      required: false
+      default: "cpp,cxx,cc,h,hpp"
+  checks:
+    description: |
+      Comma-separated list of clazy checks. Default is level1.
+    required: false
+    default: "level1"
+  warnings_as_errors:
+    description: |
+      Comma-separated list of checks that will be promoted to errors.
+    required: false
+    default: ""
+  extra-arg:
+    description: |
+      Additional argument to append to the compiler command line.
+    required: false
+    default: ""
+  extra-arg-before:
+    description: |
+      Additional argument to prepend to the compiler command line.
+    required: false
+    default: ""
+  ignore-headers:
+    description: |
+      Ignore thirdparty headers.
+    required: false
+    default: true
+  header-filter:
+    description: |
+      Regular expression matching the names of the headers to output diagnostics from.
+      Diagnostics from the main file of each translation unit are always displayed.
+    required: false
+    default: ''
+  ignore-dirs:
+    description: |
+      Regular expression matching the names of the
+      directories for which diagnostics should never be emitted. Useful for ignoring 3rdparty code.
+    required: false
+    default: ''
+  only-qt:
+    description: |
+      Won't emit warnings for non-Qt files, or in other words, if -DQT_CORE_LIB is missing.
+    required: false
+    default: false
+  qt4-compat:
+    description: |
+      Turns off checks not compatible with Qt 4
+    required: false
+    default: false
+  supported-checks-json:
+    description: |
+      Dump meta information about supported checks in JSON format.
+    required: false
+    default: false
+  visit-implicit-code:
+    description: |
+      For visiting implicit code like compiler generated constructors. None of the built-in checks benefit from this, but can be useful for custom checks
+    required: false
+    default: false
+  database:
+    description: |-
+      Is used to read a compile command database.
+    required: false
+    default: ""
+outputs:
+  warnings-count:
+    description: 'Total warnings count'
+  errors-count:
+    description: 'Total warnings count'
+
+runs:
+  using: 'composite'
+  steps:
+
+    - name: Cache files
+      uses: actions/cache@v4
+      id: cache-clazy-standalone
+      with:
+        path: ~/.local/clazy/
+        key: ${{ runner.os }}-clazy-${{ inputs.version }}
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+        libclang-dev \
+        llvm-dev
+
+    - name: Build clazy
+      shell: bash
+      if: steps.cache-clazy-standalone.outputs.cache-hit != 'true'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+        ninja-build \
+        cmake
+
+        wget -O ./clazy.tar.gz https://github.com/KDE/clazy/archive/refs/tags/v${{ inputs.version }}.tar.gz
+        tar -xzvf clazy.tar.gz && rm -rf clazy.tar.gz
+        cd ./clazy-${{ inputs.version }} && cmake -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=~/.local/clazy/lib -DCMAKE_INSTALL_PREFIX=~/.local/clazy -DCMAKE_BUILD_TYPE=Release -G Ninja \
+        && cmake --build . \
+        && cmake --build . --target install && cd .. && rm -rf ./clazy-${{ inputs.version }}
+
+    - name: Save clazy
+      if: steps.cache-clazy-standalone.outputs.cache-hit != 'true'
+      uses: actions/cache@v4
+      with:
+        path: ~/.local/clazy
+        key: ${{ runner.os }}-clazy-${{ inputs.version }}
+
+    - name: Start clazy
+      id: clazy-check
+      shell: bash
+      env:
+        CHECKS: ${{ inputs.checks }}
+        EXTRA_ARG: ${{ inputs.extra-arg }}
+        EXTRA_ARG_BEFORE: ${{ inputs.extra-arg-before }}
+        DATABASE: ${{ inputs.database }}
+        EXTENSIONS: ${{inputs.extensions }}
+        EXTRA_OPTIONS: ${{ inputs.extra-options }}
+        HEADER_FILTER: ${{ inputs.header-filter }}
+        IGNORE_DIRS: ${{ inputs.ignore-dirs}}
+        ONLY_QT: ${{ inputs.only-qt }}
+        QT4_COMPAT: ${{ inputs.qt4-compat }}
+        SUPPORTED_CHECKS_JSON: ${{ inputs.supported-checks-json }}
+        VISIT_IMPLICIT_CODE: ${{ inputs.visit-implicit-code }}
+        CLAZY_CHECKS_AS_ERRORS: ${{ inputs.warnings_as_errors }}
+        IGNORE_HEADERS : ${{ inputs.ignore-headers }}
+      run: |
+        PATH=~/.local/clazy/bin:$PATH "$GITHUB_ACTION_PATH/clazy.sh"
+
+    - name: Clean up
+      shell: bash
+      run: |
+        sudo apt-get autoremove --purge -y \
+          libclang-dev \
+          llvm-dev \
+          ninja-build \
+          cmake
+        sudo apt-get clean
+
+    - name: Exit if error
+      if: ${{steps.clazy-check.outputs.errors-count > 0 }}
+      shell: bash
+      run: exit 1
