@@ -105,11 +105,11 @@ runs:
         cmake
 
         wget -O ./clazy.tar.gz https://github.com/KDE/clazy/archive/refs/tags/v${{ inputs.version }}.tar.gz
-        tar -xzvf clazy.tar.gz && rm -rf clazy.tar.gz 
+        tar -xzvf clazy.tar.gz && rm -rf clazy.tar.gz
         cd ./clazy-${{ inputs.version }} && cmake -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=~/.local/clazy/lib -DCMAKE_INSTALL_PREFIX=~/.local/clazy -DCMAKE_BUILD_TYPE=Release -G Ninja \
         && cmake --build . \
         && cmake --build . --target install && cd .. && rm -rf ./clazy-${{ inputs.version }}
-    
+
     - name: Save clazy
       if: steps.cache-clazy-standalone.outputs.cache-hit != 'true'
       uses: actions/cache@v4
@@ -119,7 +119,7 @@ runs:
 
     - name: Start clazy
       id: clazy-check
-      shell: bash 
+      shell: bash
       env:
         CHECKS: ${{ inputs.checks }}
         EXTRA_ARG: ${{ inputs.extra-arg }}

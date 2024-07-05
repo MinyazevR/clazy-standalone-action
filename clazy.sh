@@ -56,7 +56,7 @@ echo 0 > "$errors_file"
 
 declare -A warnings_seen
 
-echo "$output" | grep -E "$pattern" | while IFS= read -r line; do 
+echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
     if [[ $line =~ $pattern ]]; then
         relative_path="${BASH_REMATCH[1]}"
         line_number="${BASH_REMATCH[2]}"
