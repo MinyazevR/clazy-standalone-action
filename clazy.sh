@@ -94,7 +94,7 @@ echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
                 echo "$current_errors" > "$errors_file"
             fi
 
-        elif [[ "${files[@]}" =~ "$canonical_path" ]]; then
+        elif [[ "${files[@]}" =~ "$absolute_path" ]]; then
 
             if [[ "$warning_type" == "warning" ]]; then
                 echo "warning file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
@@ -111,7 +111,7 @@ echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
             fi
         fi
 
-        if [[ "${files[@]}" =~ "$canonical_path" ]]; then
+        if [[ "${files[@]}" =~ "$absolute_path" ]]; then
             if [[ "$warning_type" == "warning" ]]; then
                 echo "::warning file=$absolute_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
             fi
