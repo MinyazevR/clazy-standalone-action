@@ -29,6 +29,12 @@ inputs:
       Additional argument to prepend to the compiler command line.
     required: false
     default: ""
+  install-stable:
+    description: |
+      The stable version is being downloaded without compilation.
+      In this case, the version field is ignored.
+    required: false
+    default: false
   ignore-headers:
     description: |
       Ignore thirdparty headers.
@@ -85,7 +91,7 @@ runs:
       id: cache-clazy-standalone
       with:
         path: ~/.local/clazy/
-        key: ${{ runner.os }}-clazy-${{ inputs.version }}
+        key: ${{ runner.os }}-clazy-${{ inputs.version }}-${{ github.ref_name }}
 
     - name: Install dependencies
       shell: bash
@@ -95,9 +101,16 @@ runs:
         libclang-dev \
         llvm-dev
 
+    - name: Install clazy
+      if: ${{ inputs.install-stable}} == 'true'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install clazy
+
     - name:  Build clazy
       shell: bash
-      if: steps.cache-clazy-standalone.outputs.cache-hit != 'true'
+      if: steps.cache-clazy-standalone.outputs.cache-hit != 'true' && ${{ inputs.install-stable}} != 'true'
       run: |
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
@@ -111,11 +124,11 @@ runs:
         && cmake --build . --target install && cd .. && rm -rf ./clazy-${{ inputs.version }}
 
     - name: Save clazy
-      if: steps.cache-clazy-standalone.outputs.cache-hit != 'true'
+      if: steps.cache-clazy-standalone.outputs.cache-hit != 'true' && ${{ inputs.install-stable}} != 'true'
       uses: actions/cache@v4
       with:
         path: ~/.local/clazy
-        key: ${{ runner.os }}-clazy-${{ inputs.version }}
+        key: ${{ runner.os }}-clazy-${{ inputs.version }}-${{ github.ref_name }}
 
     - name: Start clazy
       id: clazy-check
