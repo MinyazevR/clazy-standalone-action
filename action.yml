@@ -16,7 +16,7 @@ inputs:
     default: "level1"
   warnings_as_errors:
     description: |
-      Comma-separated list of checks that will be promoted to errors.
+      comma-separated list of checks that will be promoted to errors.
     required: false
     default: ""
   extra-arg:
@@ -69,7 +69,6 @@ inputs:
   database:
     description: |-
       Is used to read a compile command database.
-    required: false
     default: ""
 outputs:
   warnings-count:
@@ -96,7 +95,7 @@ runs:
         libclang-dev \
         llvm-dev
 
-    - name: Build clazy
+    - name:  Build clazy
       shell: bash
       if: steps.cache-clazy-standalone.outputs.cache-hit != 'true'
       run: |
@@ -106,11 +105,11 @@ runs:
         cmake
 
         wget -O ./clazy.tar.gz https://github.com/KDE/clazy/archive/refs/tags/v${{ inputs.version }}.tar.gz
-        tar -xzvf clazy.tar.gz && rm -rf clazy.tar.gz
+        tar -xzvf clazy.tar.gz && rm -rf clazy.tar.gz 
         cd ./clazy-${{ inputs.version }} && cmake -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=~/.local/clazy/lib -DCMAKE_INSTALL_PREFIX=~/.local/clazy -DCMAKE_BUILD_TYPE=Release -G Ninja \
         && cmake --build . \
         && cmake --build . --target install && cd .. && rm -rf ./clazy-${{ inputs.version }}
-
+    
     - name: Save clazy
       if: steps.cache-clazy-standalone.outputs.cache-hit != 'true'
       uses: actions/cache@v4
@@ -120,12 +119,12 @@ runs:
 
     - name: Start clazy
       id: clazy-check
-      shell: bash
+      shell: bash 
       env:
         CHECKS: ${{ inputs.checks }}
         EXTRA_ARG: ${{ inputs.extra-arg }}
         EXTRA_ARG_BEFORE: ${{ inputs.extra-arg-before }}
-        DATABASE: ${{ inputs.database }}
+        DATABASE: "${{ inputs.database }}"
         EXTENSIONS: ${{inputs.extensions }}
         EXTRA_OPTIONS: ${{ inputs.extra-options }}
         HEADER_FILTER: ${{ inputs.header-filter }}
@@ -138,16 +137,6 @@ runs:
         IGNORE_HEADERS : ${{ inputs.ignore-headers }}
       run: |
         PATH=~/.local/clazy/bin:$PATH "$GITHUB_ACTION_PATH/clazy.sh"
-
-    - name: Clean up
-      shell: bash
-      run: |
-        sudo apt-get autoremove --purge -y \
-          libclang-dev \
-          llvm-dev \
-          ninja-build \
-          cmake
-        sudo apt-get clean
 
     - name: Exit if error
       if: ${{steps.clazy-check.outputs.errors-count > 0 }}

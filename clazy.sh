@@ -28,7 +28,7 @@ if [ "$VISIT_IMPLICIT_CODE" == "true" ]; then
     options+=( "--visit-implicit-code" )
 fi
 
-if [ "$IGNORE_HEADERS" == "true" ]; then
+if [ "$IGNORE_HEADERS" == "true" ] && [ -n "$DATABASE" ]; then
     cp $DATABASE/compile_commands.json $DATABASE/compile_commands_backup.json
     sed -i 's/-I\([^ ]*\)/-isystem\1/g' $DATABASE/compile_commands.json
 fi
@@ -64,10 +64,14 @@ echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
         warning_type="${BASH_REMATCH[4]}"
         warning_message="${BASH_REMATCH[5]}"
         warning_code="${BASH_REMATCH[6]}"
-        absolute_path=$(realpath "$relative_path")
-        canonical_path=$(readlink -f "$absolute_path")
 
-        warning_key="${canonical_path}:${line_number}:${column_number}:${warning_code}"
+        if [[ "$relative_path" == /* ]]; then
+            absolute_path=$relative_path
+        else
+            absolute_path=$(realpath "$DATABASE/$relative_path")
+        fi
+
+        warning_key="${absolute_path}:${line_number}:${column_number}:${warning_code}"
 
         if [[ -n "${warnings_seen[$warning_key]}" ]]; then
             continue
@@ -77,14 +81,14 @@ echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
 
         if [ "$IGNORE_HEADERS" != "true" ]; then
             if [[ "$warning_type" == "warning" ]]; then
-                echo "warning file=$canonical_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
+                echo "warning file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
                 current_warnings=$(<"$warnings_file")
                 ((current_warnings++))
                 echo "$current_warnings" > "$warnings_file"
             fi
 
             if [[ "$warning_type" == "error" ]]; then
-                echo "error file=$canonical_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
+                echo "error file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
                 current_errors=$(<"$errors_file")
                 ((current_errors++))
                 echo "$current_errors" > "$errors_file"
@@ -93,14 +97,14 @@ echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
         elif [[ "${files[@]}" =~ "$canonical_path" ]]; then
 
             if [[ "$warning_type" == "warning" ]]; then
-                echo "warning file=$canonical_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
+                echo "warning file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
                 current_warnings=$(<"$warnings_file")
                 ((current_warnings++))
                 echo "$current_warnings" > "$warnings_file"
             fi
 
             if [[ "$warning_type" == "error" ]]; then
-                echo "error file=$canonical_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
+                echo "error file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
                 current_errors=$(<"$errors_file")
                 ((current_errors++))
                 echo "$current_errors" > "$errors_file"
@@ -109,11 +113,11 @@ echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
 
         if [[ "${files[@]}" =~ "$canonical_path" ]]; then
             if [[ "$warning_type" == "warning" ]]; then
-                echo "::warning file=$canonical_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
+                echo "::warning file=$absolute_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
             fi
 
             if [[ "$warning_type" == "error" ]]; then
-                echo "::error file=$canonical_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
+                echo "::error file=$absolute_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
             fi
         fi
     fi
@@ -125,7 +129,7 @@ errors_count=$(<"$errors_file")
 echo "::set-output name=errors-count::$errors_count"
 echo "::set-output name=warnings-count::$warnings_count"
 
-if [ "$IGNORE_HEADERS" == "true" ]; then
+if [ "$IGNORE_HEADERS" == "true" ] && [ -n "$DATABASE" ]; then
     mv $DATABASE/compile_commands_backup.json $DATABASE/compile_commands.json
 fi
 
