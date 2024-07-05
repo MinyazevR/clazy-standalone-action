@@ -91,7 +91,7 @@ runs:
       id: cache-clazy-standalone
       with:
         path: ~/.local/clazy/
-        key: ${{ runner.os }}-clazy-${{ inputs.version }}-${{ github.ref_name }}
+        key: ${{ runner.os }}-clazy-${{ inputs.version }}-${{ github.event.pull_request.number }}
 
     - name: Install dependencies
       shell: bash
@@ -102,7 +102,7 @@ runs:
         llvm-dev
 
     - name: Install clazy
-      if: ${{ inputs.install-stable}} == 'true'
+      if: ${{ inputs.install-stable }} == 'true'
       shell: bash
       run: |
         sudo apt-get update
@@ -110,7 +110,7 @@ runs:
 
     - name:  Build clazy
       shell: bash
-      if: steps.cache-clazy-standalone.outputs.cache-hit != 'true' && ${{ inputs.install-stable}} != 'true'
+      if: ${{ steps.cache-clazy-standalone.outputs.cache-hit != 'true' && inputs.install-stable != 'true' }}
       run: |
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
@@ -124,11 +124,11 @@ runs:
         && cmake --build . --target install && cd .. && rm -rf ./clazy-${{ inputs.version }}
 
     - name: Save clazy
-      if: steps.cache-clazy-standalone.outputs.cache-hit != 'true' && ${{ inputs.install-stable}} != 'true'
+      if: ${{ steps.cache-clazy-standalone.outputs.cache-hit != 'true' && inputs.install-stable != 'true' }}
       uses: actions/cache@v4
       with:
         path: ~/.local/clazy
-        key: ${{ runner.os }}-clazy-${{ inputs.version }}-${{ github.ref_name }}
+        key: ${{ runner.os }}-clazy-${{ inputs.version }}-${{ github.event.pull_request.number }}
 
     - name: Start clazy
       id: clazy-check
