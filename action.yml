@@ -76,6 +76,10 @@ inputs:
     description: |-
       Is used to read a compile command database.
     default: ""
+  only-diff:
+    description: |-
+      Is used to check only modified and appended files.
+    default: ""
 outputs:
   warnings-count:
     description: 'Total warnings count'
@@ -148,6 +152,7 @@ runs:
         VISIT_IMPLICIT_CODE: ${{ inputs.visit-implicit-code }}
         CLAZY_CHECKS_AS_ERRORS: ${{ inputs.warnings_as_errors }}
         IGNORE_HEADERS : ${{ inputs.ignore-headers }}
+        ONLY_DIFF: ${{ inputs.only-diff }}
       run: |
         PATH=~/.local/clazy/bin:$PATH "$GITHUB_ACTION_PATH/clazy.sh"
 
