@@ -1,8 +1,10 @@
 #!/bin/bash
+set -x
 
 options=()
 extra_args=()
 extra_args_before=()
+files=()
 
 for pair in $EXTRA_ARG; do
     extra_args+=( "--extra-arg=$pair" )
@@ -35,12 +37,22 @@ fi
 
 pattern='^(.*?):([0-9]+):([0-9]+): (.+): (.+) \[(.*)\]$'
 
-IFS=',' read -r -a extensions <<< "$EXTENSIONS"
-for ext in "${extensions[@]}"; do
-    while IFS= read -r -d '' file; do
-        files+=($(realpath "$file"))
-    done < <(find . -name "*.$ext" -print0)
-done
+if [[ -n "$ONLY_DIFF" ]]; then
+    for file in $(git diff --name-only HEAD^1 HEAD); do
+        file_extension="${file##*.}"
+        if echo "$EXTENSIONS" | grep -q "$file_extension"; then
+            files+=("$(realpath "$file")")
+       fi
+    done
+else
+    IFS=',' read -r -a extensions <<< "$EXTENSIONS"
+    for ext in "${extensions[@]}"; do
+        while IFS= read -r -d '' file; do
+            files+=($(realpath "$file"))
+        done < <(find . -name "*.$ext" -print0)
+    done
+
+fi
 
 output=$(clazy-standalone --checks="$CHECKS" -p="$DATABASE" \
     --header-filter="$HEADER_FILTER" --ignore-dirs="$IGNORE_DIRS" \
