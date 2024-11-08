@@ -40,14 +40,22 @@ if [[ -n "$ONLY_DIFF" ]]; then
     for file in $(git diff --name-only HEAD^1 HEAD); do
         file_extension="${file##*.}"
         if echo "$EXTENSIONS" | grep -q "$file_extension"; then
-            files+=("$(realpath "$file")")
-       fi
+            if [[ $(realpath "$file") =~ $IGNORE_DIRS ]]; then
+                echo "skip file: $file"
+            else
+                files+=($(realpath "$file"))
+            fi
+        fi
     done
 else
     IFS=',' read -r -a extensions <<< "$EXTENSIONS"
     for ext in "${extensions[@]}"; do
         while IFS= read -r -d '' file; do
+        if [[ $(realpath "$file") =~ $IGNORE_DIRS ]]; then
+            echo "skip file: $file"
+        else
             files+=($(realpath "$file"))
+        fi
         done < <(find . -name "*.$ext" -print0)
     done
 
