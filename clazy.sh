@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 options=()
 extra_args=()
@@ -36,8 +37,8 @@ fi
 
 pattern='^(.*?):([0-9]+):([0-9]+): (.+): (.+) \[(.*)\]$'
 
-if [[ -z "$ONLY_DIFF" ]]; then
-    for file in $(git status -s --no-renames | awk '{print $2}'); do
+if [[ -n "$ONLY_DIFF" ]]; then
+    for file in $(git diff --name-only HEAD^1 HEAD); do
         file_extension="${file##*.}"
         if echo "$EXTENSIONS" | grep -q "$file_extension"; then
             files+=("$(realpath "$file")")
