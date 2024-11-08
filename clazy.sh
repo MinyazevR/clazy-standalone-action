@@ -30,9 +30,8 @@ if [ "$VISIT_IMPLICIT_CODE" == "true" ]; then
     options+=( "--visit-implicit-code" )
 fi
 
-if [ "$IGNORE_HEADERS" == "true" ] && [ -n "$DATABASE" ]; then
-    cp $DATABASE/compile_commands.json $DATABASE/compile_commands_backup.json
-    sed -i 's/-I\([^ ]*\)/-isystem\1/g' $DATABASE/compile_commands.json
+if [ "$IGNORE_HEADERS" == "true" ]; then
+    options+=( "--ignore-included-files" )
 fi
 
 pattern='^(.*?):([0-9]+):([0-9]+): (.+): (.+) \[(.*)\]$'
@@ -140,9 +139,5 @@ errors_count=$(<"$errors_file")
 
 echo "::set-output name=errors-count::$errors_count"
 echo "::set-output name=warnings-count::$warnings_count"
-
-if [ "$IGNORE_HEADERS" == "true" ] && [ -n "$DATABASE" ]; then
-    mv $DATABASE/compile_commands_backup.json $DATABASE/compile_commands.json
-fi
 
 rm -f "$warnings_file" "$errors_file"
