@@ -43,7 +43,7 @@ if [[ -n "$ONLY_DIFF" ]]; then
             if [[ $(realpath "$file") =~ $IGNORE_DIRS ]]; then
                 echo "skip file: $file"
             else
-                files+=($(realpath "$file"))
+                files+=("$file")
             fi
         fi
     done
@@ -54,7 +54,7 @@ else
         if [[ $(realpath "$file") =~ $IGNORE_DIRS ]]; then
             echo "skip file: $file"
         else
-            files+=($(realpath "$file"))
+            files+=("$file")
         fi
         done < <(find . -name "*.$ext" -print0)
     done
@@ -98,46 +98,18 @@ echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
 
         warnings_seen["$warning_key"]=1
 
-        if [ "$IGNORE_HEADERS" != "true" ]; then
-            if [[ "$warning_type" == "warning" ]]; then
-                echo "warning file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
-                current_warnings=$(<"$warnings_file")
-                ((current_warnings++))
-                echo "$current_warnings" > "$warnings_file"
-            fi
-
-            if [[ "$warning_type" == "error" ]]; then
-                echo "error file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
-                current_errors=$(<"$errors_file")
-                ((current_errors++))
-                echo "$current_errors" > "$errors_file"
-            fi
-
-        elif [[ "${files[@]}" =~ "$absolute_path" ]]; then
-
-            if [[ "$warning_type" == "warning" ]]; then
-                echo "warning file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
-                current_warnings=$(<"$warnings_file")
-                ((current_warnings++))
-                echo "$current_warnings" > "$warnings_file"
-            fi
-
-            if [[ "$warning_type" == "error" ]]; then
-                echo "error file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
-                current_errors=$(<"$errors_file")
-                ((current_errors++))
-                echo "$current_errors" > "$errors_file"
-            fi
-        fi
-
-        if [[ "${files[@]}" =~ "$absolute_path" ]]; then
-            if [[ "$warning_type" == "warning" ]]; then
-                echo "::warning file=$absolute_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
-            fi
-
-            if [[ "$warning_type" == "error" ]]; then
-                echo "::error file=$absolute_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
-            fi
+	if [[ "$warning_type" == "warning" ]]; then
+            echo "warning file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
+            current_warnings=$(<"$warnings_file")
+            ((current_warnings++))
+            echo "$current_warnings" > "$warnings_file"
+            echo "::warning file=$absolute_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
+	elif [[ "$warning_type" == "error" ]]; then
+            echo "error file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
+            current_errors=$(<"$errors_file")
+            ((current_errors++))
+            echo "$current_errors" > "$errors_file"
+            echo "::error file=$absolute_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
         fi
     fi
 done
