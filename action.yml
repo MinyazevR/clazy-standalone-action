@@ -39,7 +39,7 @@ inputs:
     description: |
       Ignore thirdparty headers.
     required: false
-    default: true
+    default: false
   header-filter:
     description: |
       Regular expression matching the names of the headers to output diagnostics from.
