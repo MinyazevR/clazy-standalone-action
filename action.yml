@@ -19,6 +19,10 @@ inputs:
       comma-separated list of checks that will be promoted to errors.
     required: false
     default: ""
+  fail-on-warning:
+    description: ""
+    required: false
+    default: false
   extra-arg:
     description: |
       Additional argument to append to the compiler command line.
@@ -156,7 +160,12 @@ runs:
       run: |
         PATH=~/.local/clazy/bin:$PATH "$GITHUB_ACTION_PATH/clazy.sh"
 
+    - name: Exit if warning
+      if: ${{ inputs.fail-on-warning  == 'true' && steps.clazy-check.outputs.warnings-count > 0}}
+      shell: bash
+      run: exit 1
+        
     - name: Exit if error
-      if: ${{steps.clazy-check.outputs.errors-count > 0 }}
+      if: ${{ steps.clazy-check.outputs.errors-count > 0 }}
       shell: bash
       run: exit 1
