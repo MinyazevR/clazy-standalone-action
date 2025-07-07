@@ -54,7 +54,8 @@ else
 
 fi
 
-output=$(clazy-standalone --checks="$CHECKS" -p="$DATABASE" \
+export CLAZY_CHECKS="$CHECKS"
+output=$(set -e; clazy-standalone -p="$DATABASE" \
     --header-filter="$HEADER_FILTER" --ignore-dirs="$IGNORE_DIRS" \
     "${options[@]}" "${extra_args[@]}" "${extra_args_before[@]}" "${files[@]}" 2>&1)
 
@@ -77,10 +78,21 @@ echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
         warning_message="${BASH_REMATCH[5]}"
         warning_code="${BASH_REMATCH[6]}"
 
+        counter=0
         if [[ "$relative_path" == /* ]]; then
             absolute_path=$relative_path
         else
-            absolute_path=$(realpath "$DATABASE/$relative_path")
+          for full_path in "${files[@]}"; do
+            if [[ "$(basename "$full_path")" == "$relative_path" ]]; then
+              absolute_path="$full_path"
+              ((counter++))
+            fi
+          done
+        fi
+
+        # This is incredibly bad, but I don't know how to properly handle the clazy output yet
+        if [ "$counter" -ne 1 ]; then
+          continue
         fi
 
         warning_key="${absolute_path}:${line_number}:${column_number}:${warning_code}"
