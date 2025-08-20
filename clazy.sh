@@ -6,7 +6,7 @@ extra_args=()
 extra_args_before=()
 files=()
 
-extra_args+=( "--extra-arg=-fdiagnostics-absolute-paths" )
+extra_args+=( "--extra-arg=-fdiagnostics-print-source-range-info" )
 
 for pair in $EXTRA_ARG; do
     extra_args+=( "--extra-arg=$pair" )
