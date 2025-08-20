@@ -55,7 +55,9 @@ else
 fi
 
 export CLAZY_CHECKS="$CHECKS"
-output=$(set -e; clazy-standalone -p="$DATABASE" \
+EXPORT_FIXES_FILE="$PWD/clazy-fixes.yaml"
+
+output=$(set -e; clazy-standalone --export-fixes="$EXPORT_FIXES_FILE" -p="$DATABASE" \
     --header-filter="$HEADER_FILTER" --ignore-dirs="$IGNORE_DIRS" \
     "${options[@]}" "${extra_args[@]}" "${extra_args_before[@]}" "${files[@]}" 2>&1)
 
@@ -67,83 +69,53 @@ trap 'rm -f "$warnings_file" "$errors_file"' EXIT
 echo 0 > "$warnings_file"
 echo 0 > "$errors_file"
 
+file_path=""
+offset=""
+message=""
+code=""
+level=""
+
+if ! command -v yq &> /dev/null; then
+    echo "Error: yq is not installed. Please install it first."
+    exit 1
+fi
+
 declare -A warnings_seen
 
-echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
-    if [[ $line =~ $pattern ]]; then
-        relative_path="${BASH_REMATCH[1]}"
-        line_number="${BASH_REMATCH[2]}"
-        column_number="${BASH_REMATCH[3]}"
-        warning_type="${BASH_REMATCH[4]}"
-        warning_message="${BASH_REMATCH[5]}"
-        warning_code="${BASH_REMATCH[6]}"
-
-        counter=0
-        if [[ "$relative_path" == /* ]]; then
-            absolute_path=$relative_path
-        else
-          for full_path in "${files[@]}"; do
-            if [[ "$(basename "$full_path")" == "$relative_path" ]]; then
-              absolute_path="$full_path"
-              ((counter++))
-            fi
-          done
-        fi
-
-        # This is incredibly bad, but I don't know how to properly handle the clazy output yet
-        if [ "$counter" -ne 1 ]; then
-          continue
-        fi
-
-        warning_key="${absolute_path}:${line_number}:${column_number}:${warning_code}"
+yq -o json "$EXPORT_FIXES_FILE" | jq -c '.Diagnostics[]' | while read -r diagnostic; do
+    file_path=$(echo "$diagnostic" | jq -r '.DiagnosticMessage.FilePath')
+    offset=$(echo "$diagnostic" | jq -r '.DiagnosticMessage.FileOffset')
+    message=$(echo "$diagnostic" | jq -r '.DiagnosticMessage.Message')
+    code=$(echo "$diagnostic" | jq -r '.DiagnosticName')
+    level=$(echo "$diagnostic" | jq -r '.Level // "Warning"')
+    
+    if [[ "$file_path" != "null" && "$offset" != "null" && "$message" != "null" && "$code" != "null" ]]; then
+    
+        warning_key="${file_path}:${offset}:${code}"
 
         if [[ -n "${warnings_seen[$warning_key]}" ]]; then
             continue
         fi
 
         warnings_seen["$warning_key"]=1
-
-        if [ "$IGNORE_HEADERS" != "true" ]; then
-            if [[ "$warning_type" == "warning" ]]; then
-                echo "warning file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
-                current_warnings=$(<"$warnings_file")
-                ((current_warnings++))
-                echo "$current_warnings" > "$warnings_file"
-            fi
-
-            if [[ "$warning_type" == "error" ]]; then
-                echo "error file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
+        
+        case $level in
+            "Error")
+                type="error"
                 current_errors=$(<"$errors_file")
                 ((current_errors++))
                 echo "$current_errors" > "$errors_file"
-            fi
-
-        elif [[ "${files[@]}" =~ "$absolute_path" ]]; then
-
-            if [[ "$warning_type" == "warning" ]]; then
-                echo "warning file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
+                ;;
+            "Warning") type="warning"
                 current_warnings=$(<"$warnings_file")
                 ((current_warnings++))
                 echo "$current_warnings" > "$warnings_file"
-            fi
-
-            if [[ "$warning_type" == "error" ]]; then
-                echo "error file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
-                current_errors=$(<"$errors_file")
-                ((current_errors++))
-                echo "$current_errors" > "$errors_file"
-            fi
-        fi
-
-        if [[ "${files[@]}" =~ "$absolute_path" ]]; then
-            if [[ "$warning_type" == "warning" ]]; then
-                echo "::warning file=$absolute_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
-            fi
-
-            if [[ "$warning_type" == "error" ]]; then
-                echo "::error file=$absolute_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
-            fi
-        fi
+                ;;
+            "Note") type="notice" ;;
+            *) type="warning" ;;
+        esac
+        
+        echo "::$type file=$file_path,line=1,col=$offset::$message [$code]"
     fi
 done
 
