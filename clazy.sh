@@ -38,7 +38,8 @@ fi
 pattern='^(.*?):([0-9]+):([0-9]+): (.+): (.+) \[(.*)\]$'
 
 if [[ -n "$ONLY_DIFF" ]]; then
-    for file in $(git diff --name-only HEAD^1 HEAD); do
+    TARGET_BRANCH="${GITHUB_BASE_REF:-master}"
+    for file in $(git diff --name-only origin/$TARGET_BRANCH...HEAD); do
         file_extension="${file##*.}"
         if echo "$EXTENSIONS" | grep -q "$file_extension"; then
             files+=("$(realpath "$file")")
