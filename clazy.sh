@@ -82,7 +82,7 @@ fi
 
 declare -A warnings_seen
 
-yq -o json "$EXPORT_FIXES_FILE" | jq -c '.Diagnostics[]' | while read -r diagnostic; do
+yq eval -o json "$EXPORT_FIXES_FILE" | jq -c '.Diagnostics[]' | while read -r diagnostic; do
     file_path=$(echo "$diagnostic" | jq -r '.DiagnosticMessage.FilePath')
     offset=$(echo "$diagnostic" | jq -r '.DiagnosticMessage.FileOffset')
     message=$(echo "$diagnostic" | jq -r '.DiagnosticMessage.Message')
