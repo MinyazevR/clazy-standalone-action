@@ -32,11 +32,12 @@ if [ "$VISIT_IMPLICIT_CODE" == "true" ]; then
     options+=( "--visit-implicit-code" )
 fi
 
-if [ "$IGNORE_HEADERS" == "true" ] && [ -n "$DATABASE" ]; then
+if [ "$IGNORE_HEADERS" == "true" ] && [ -n "$DATABASE/compile_commands.json" ]; then
     cp $DATABASE/compile_commands.json $DATABASE/compile_commands_backup.json
     sed -i 's/-I\([^ ]*\)/-isystem\1/g' $DATABASE/compile_commands.json
 fi
 
+cat "$DATABASE/compile_commands.json"
 pattern='^(.*?):([0-9]+):([0-9]+): (.+): (.+) \[(.*)\]$'
 
 if [[ -n "$ONLY_DIFF" ]]; then
@@ -127,7 +128,7 @@ errors_count=$(<"$errors_file")
 echo "::set-output name=errors-count::$errors_count"
 echo "::set-output name=warnings-count::$warnings_count"
 
-if [ "$IGNORE_HEADERS" == "true" ] && [ -n "$DATABASE" ]; then
+if [ "$IGNORE_HEADERS" == "true" ] && [ -n "$DATABASE/compile_commands.json" ]; then
     mv $DATABASE/compile_commands_backup.json $DATABASE/compile_commands.json
 fi
 
