@@ -37,7 +37,6 @@ if [ "$IGNORE_HEADERS" == "true" ] && [ -n "$DATABASE/compile_commands.json" ]; 
     sed -i 's/-I\([^ ]*\)/-isystem\1/g' $DATABASE/compile_commands.json
 fi
 
-cat "$DATABASE/compile_commands.json"
 pattern='^(.*?):([0-9]+):([0-9]+): (.+): (.+) \[(.*)\]$'
 
 if [[ -n "$ONLY_DIFF" ]]; then
@@ -64,6 +63,7 @@ output=$(set -e; clazy-standalone --export-fixes="$EXPORT_FIXES_FILE" -p="$DATAB
     --header-filter="$HEADER_FILTER" --ignore-dirs="$IGNORE_DIRS" \
     "${options[@]}" "${extra_args[@]}" "${extra_args_before[@]}" "${files[@]}" 2>&1)
 
+cat "$EXPORT_FIXES_FILE"
 warnings_file=$(mktemp)
 errors_file=$(mktemp)
 
