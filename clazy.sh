@@ -75,8 +75,9 @@ echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
         warning_code="${BASH_REMATCH[6]}"
 
         warning_key="${absolute_path}:${line_number}:${column_number}:${warning_code}"
+        hash=$(echo -n "$warning_key" | md5sum | cut -d' ' -f1)
 
-        if [[ -n "${warnings_seen[$warning_key]:-}" ]]; then
+        if [[ -n "${warnings_seen[$hash]:-}" ]]; then
             continue
         fi
 
