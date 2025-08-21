@@ -78,7 +78,7 @@ echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
         
         echo "$warning_key"
 
-        if [[ -n "${warnings_seen[$warning_key]}" ]]; then
+        if [[ -n "${warnings_seen[$warning_key]:-}" ]]; then
             continue
         fi
 
