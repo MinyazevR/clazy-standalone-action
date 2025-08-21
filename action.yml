@@ -61,6 +61,10 @@ inputs:
       Won't emit warnings for non-Qt files, or in other words, if -DQT_CORE_LIB is missing.
     required: false
     default: false
+  ignore-header-deps:
+    description: |
+    required: false
+    default: false
   qt4-compat:
     description: |
       Turns off checks not compatible with Qt 4
@@ -162,6 +166,7 @@ runs:
         IGNORE_EXTERNAL_FILES : ${{ inputs.ignore-external-files }}
         ONLY_DIFF: ${{ inputs.only-diff }}
         ROOT_DIR: ${{ inputs.root-dir }}
+        IGNORE_HEADER_DEPS: ${{ inputs.ignore-header-deps }}
       run: |
         PATH=~/.local/clazy/bin:$PATH "$GITHUB_ACTION_PATH/clazy.sh"
 
