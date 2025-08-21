@@ -86,14 +86,14 @@ echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
 
         if [ "$IGNORE_EXTERNAL_FILES" != "true" ]; then
             if [[ "$warning_type" == "warning" ]]; then
-                echo "::warning file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
+                echo "::warning file=$absolute_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
                 current_warnings=$(<"$warnings_file")
                 ((current_warnings++))
                 echo "$current_warnings" > "$warnings_file"
             fi
 
             if [[ "$warning_type" == "error" ]]; then
-                echo "::error file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
+                echo "::error file=$absolute_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
                 current_errors=$(<"$errors_file")
                 ((current_errors++))
                 echo "$current_errors" > "$errors_file"
@@ -102,14 +102,14 @@ echo "$output" | grep -E "$pattern" | while IFS= read -r line; do
         elif [[ "$absolute_path" == "$root_path"* ]]; then
 
             if [[ "$warning_type" == "warning" ]]; then
-                echo "::warning file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
+                echo "::warning file=$absolute_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
                 current_warnings=$(<"$warnings_file")
                 ((current_warnings++))
                 echo "$current_warnings" > "$warnings_file"
             fi
 
             if [[ "$warning_type" == "error" ]]; then
-                echo "::error file=$absolute_path,line=$line_number,col=$column_number,$warning_message [$warning_code]"
+                echo "::error file=$absolute_path,line=$line_number,col=$column_number::$warning_message [$warning_code]"
                 current_errors=$(<"$errors_file")
                 ((current_errors++))
                 echo "$current_errors" > "$errors_file"
