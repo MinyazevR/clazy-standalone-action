@@ -39,7 +39,7 @@ inputs:
       In this case, the version field is ignored.
     required: false
     default: false
-  ignore-headers:
+  ignore-external-files:
     description: |
       Ignore thirdparty headers.
     required: false
@@ -83,6 +83,10 @@ inputs:
   only-diff:
     description: |-
       Is used to check only modified and appended files.
+    default: ""
+  root-dir:
+    description: |-
+      If the ignore-external-files option is set, the final output on GH will show files that are located below this directory
     default: ""
 outputs:
   warnings-count:
@@ -155,8 +159,9 @@ runs:
         SUPPORTED_CHECKS_JSON: ${{ inputs.supported-checks-json }}
         VISIT_IMPLICIT_CODE: ${{ inputs.visit-implicit-code }}
         CLAZY_CHECKS_AS_ERRORS: ${{ inputs.warnings_as_errors }}
-        IGNORE_HEADERS : ${{ inputs.ignore-headers }}
+        IGNORE_EXTERNAL_FILES : ${{ inputs.ignore-external-files }}
         ONLY_DIFF: ${{ inputs.only-diff }}
+        ROOT_DIR: ${{ inputs.root-dir }}
       run: |
         PATH=~/.local/clazy/bin:$PATH "$GITHUB_ACTION_PATH/clazy.sh"
 
