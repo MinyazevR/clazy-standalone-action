@@ -103,7 +103,7 @@ runs:
   steps:
 
     - name: Cache files
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       id: cache-clazy-standalone
       with:
         path: ~/.local/clazy/
@@ -141,7 +141,7 @@ runs:
 
     - name: Save clazy
       if: ${{ steps.cache-clazy-standalone.outputs.cache-hit != 'true' && inputs.install-stable != 'true' }}
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.local/clazy
         key: ${{ runner.os }}-clazy-${{ inputs.version }}-${{ github.event.pull_request.number }}
